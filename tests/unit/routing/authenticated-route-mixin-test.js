@@ -1,7 +1,11 @@
 /* eslint-disable prettier/prettier, ember/no-classic-classes, qunit/require-expect */
 import EmberRouter from '@ember/routing/router';
 import { later } from '@ember/runloop';
-import { Promise as EmberPromise, resolve, reject } from 'rsvp';
+import {
+  Promise as EmberPromise,
+  resolve,
+  reject
+} from 'rsvp';
 import Route from '@ember/routing/route';
 import AuthenticatedRouteMixin from 'torii/routing/authenticated-route-mixin';
 import { module, test } from 'qunit';
