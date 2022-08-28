@@ -1,7 +1,7 @@
 /* eslint-disable ember/no-classic-classes, ember/no-get */
+import { getOwner } from '@ember/application';
 import EmberObject, { computed } from '@ember/object';
 import requiredProperty from 'torii/lib/required-property';
-import { getOwner } from 'torii/lib/container-utils';
 import { configurable } from 'torii/configuration';
 import configuration from 'torii/configuration';
 

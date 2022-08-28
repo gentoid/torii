@@ -1,5 +1,4 @@
 /* eslint-disable no-prototype-builtins */
-import { lookup } from 'torii/lib/container-utils';
 import { getConfiguration } from 'torii/configuration';
 
 export default {
@@ -11,7 +10,7 @@ export default {
     // like facebook-connect a chance to load up assets.
     for (var key in configuration.providers) {
       if (configuration.providers.hasOwnProperty(key)) {
-        lookup(applicationInstance, 'torii-provider:' + key);
+        applicationInstance.lookup('torii-provider:' + key);
       }
     }
   },
