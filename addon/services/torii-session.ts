@@ -1,10 +1,10 @@
-/* eslint-disable ember/no-classic-classes, ember/no-get */
-import Ember from 'ember';
 import { Promise as EmberPromise, reject } from 'rsvp';
 import Service from '@ember/service';
 import createStateMachine from 'torii/session/state-machine';
-import { getOwner } from 'torii/lib/container-utils';
+import { StateMachine } from 'xstate';
+import { getOwner } from '@ember/application';
 
+// @ts-expect-error
 function lookupAdapter(container, authenticationType) {
   var adapter = container.lookup('torii-adapter:' + authenticationType);
   if (!adapter) {
@@ -13,76 +13,57 @@ function lookupAdapter(container, authenticationType) {
   return adapter;
 }
 
-export default Service.extend(Ember._ProxyMixin, {
-  state: null,
-
-  _sm: undefined,
+export default class ToriiSessionService extends Service {
+  // @ts-expect-error
+  _sm?: StateMachine;
 
   get stateMachine() {
     if (!this._sm) {
       this._sm = createStateMachine(this);
     }
     return this._sm;
-  },
+  }
 
   get innerSession() {
     return this.currentState.context.session || {};
-  },
-
-  set innerSession(value) {},
+  }
 
   get currentState() {
     return this.stateMachine.state;
-  },
-
-  set currentState(value) {},
+  }
 
   get currentStateName() {
     return this.currentState.toString();
-  },
-
-  set currentStateName(value) {},
+  }
 
   get isWorking() {
     return this.currentState.context.isWorking;
-  },
-
-  set isWorking(value) {},
+  }
 
   get isOpening() {
     return this.currentState.context.isOpening;
-  },
-
-  set isOpening(value) {},
+  }
 
   get currentUser() {
     return this.innerSession.currentUser;
-  },
-
-  set currentUser(value) {},
+  }
 
   get isAuthenticated() {
     return this.innerSession.isAuthenticated;
-  },
-
-  set isAuthenticated(value) {},
+  }
 
   get errorMessage() {
     return this.currentState.context.errorMessage;
-  },
-
-  set errorMessage(value) {},
+  }
 
   get id() {
     return this.innerSession.id;
-  },
-
-  set id(value) {},
+  }
 
   // Make these properties one-way.
-  setUnknownProperty() {},
+  setUnknownProperty() {}
 
-  open(provider, options) {
+  open(provider: string, options: Object) {
     var owner = getOwner(this),
       torii = getOwner(this).lookup('service:torii'),
       sm = this.get('stateMachine');
@@ -95,6 +76,7 @@ export default Service.extend(Ember._ProxyMixin, {
       resolve();
     })
       .then(function () {
+        // @ts-expect-error
         return torii.open(provider, options);
       })
       .then(function (authorization) {
@@ -110,9 +92,9 @@ export default Service.extend(Ember._ProxyMixin, {
         sm.send('FAIL_OPEN', { error });
         return reject(error);
       });
-  },
+  }
 
-  fetch(provider, options) {
+  fetch(provider: string, options: Object) {
     var owner = getOwner(this),
       sm = this.get('stateMachine');
 
@@ -125,8 +107,6 @@ export default Service.extend(Ember._ProxyMixin, {
     })
       .then(function () {
         var adapter = lookupAdapter(owner, provider);
-        console.log('[owner, provider, options]', owner, provider, options);
-
         return adapter.fetch(options);
       })
       .then(function (data) {
@@ -137,9 +117,9 @@ export default Service.extend(Ember._ProxyMixin, {
         sm.send('FAIL_FETCH', { error });
         return reject(error);
       });
-  },
+  }
 
-  close(provider, options) {
+  close(provider: string, options: Object) {
     var owner = getOwner(this),
       sm = this.get('stateMachine');
 
@@ -161,5 +141,5 @@ export default Service.extend(Ember._ProxyMixin, {
         sm.send('FAIL_CLOSE', { error });
         return reject(error);
       });
-  },
-});
+  }
+}
