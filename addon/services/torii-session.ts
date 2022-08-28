@@ -70,7 +70,7 @@ export default class ToriiSessionService extends Service {
 
     return new EmberPromise((resolve, reject) => {
       if (!this.currentState.nextEvents.includes('START_OPEN')) {
-        return reject(new Error('Unknown Event START_CLOSE'));
+        return reject(new Error('Unknown Event START_OPEN'));
       }
       sm.send('START_OPEN');
       resolve();
@@ -100,7 +100,7 @@ export default class ToriiSessionService extends Service {
 
     return new EmberPromise((resolve, reject) => {
       if (!this.currentState.nextEvents.includes('START_FETCH')) {
-        return reject(new Error('Unknown Event START_CLOSE'));
+        return reject(new Error('Unknown Event START_FETCH'));
       }
       sm.send('START_FETCH');
       resolve();
