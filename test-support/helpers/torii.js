@@ -10,7 +10,7 @@ export function stubValidSession(owner, sessionData) {
   const sm = session.get('stateMachine');
 
   run(() => {
-    sm.send('startOpen');
-    sm.send('finishOpen', sessionData);
+    sm.send('START_OPEN');
+    sm.send('FINISH_OPEN', { data: sessionData });
   });
 }

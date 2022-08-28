@@ -8,8 +8,8 @@ import DummyFailureProvider from '../helpers/dummy-failure-provider';
 
 function signIn(session, sessionData = {}) {
   var sm = session.get('stateMachine');
-  sm.send('startOpen');
-  sm.send('finishOpen', sessionData);
+  sm.send('START_OPEN');
+  sm.send('FINISH_OPEN', { data: sessionData });
 }
 
 module('Acceptance | Session', function (hooks) {
@@ -189,8 +189,11 @@ module('Acceptance | Session', function (hooks) {
     return this.session.close('dummy-success').then(
       () => {
         assert.ok(true, 'resolved promise');
-        assert.ok(!this.session.get('isAuthenticated'), 'authenticated');
-        assert.ok(!this.session.get('currentUser.email'), 'user has email');
+        assert.notOk(this.session.get('isAuthenticated'), 'not authenticated');
+        assert.notOk(
+          this.session.get('currentUser.email'),
+          'user does not have email'
+        );
       },
       function () {
         assert.ok(false, 'fails promise');

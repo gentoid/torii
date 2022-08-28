@@ -1,11 +1,7 @@
 /* eslint-disable prettier/prettier, ember/no-classic-classes, qunit/require-expect */
 import EmberRouter from '@ember/routing/router';
 import { later } from '@ember/runloop';
-import {
-  Promise as EmberPromise,
-  resolve,
-  reject
-} from 'rsvp';
+import { Promise as EmberPromise, resolve, reject } from 'rsvp';
 import Route from '@ember/routing/route';
 import AuthenticatedRouteMixin from 'torii/routing/authenticated-route-mixin';
 import { module, test } from 'qunit';
@@ -25,7 +21,10 @@ module('Unit | Routing | Authenticated Route Mixin', function (hooks) {
     });
 
     createAuthenticatedRoute = (attrs) => {
-      class AuthenticatedRoute extends EmberRouter.extend(AuthenticatedRouteMixin, attrs) {}
+      class AuthenticatedRoute extends EmberRouter.extend(
+        AuthenticatedRouteMixin,
+        attrs
+      ) {}
       return new AuthenticatedRoute(this.owner);
     };
   });
@@ -103,19 +102,27 @@ module('Unit | Routing | Authenticated Route Mixin', function (hooks) {
 
     let fetchCalled = false;
 
-    this.owner.register('service:session', {
-      isAuthenticated: undefined,
-      fetch() {
-        fetchCalled = true;
-        return resolve();
+    this.owner.register(
+      'service:session',
+      {
+        isAuthenticated: undefined,
+        fetch() {
+          fetchCalled = true;
+          return resolve();
+        },
       },
-    }, { instantiate: false });
+      { instantiate: false }
+    );
     const route = createAuthenticatedRoute({
       session: service(),
     });
-    return route.authenticate({ send() {} }).then(function () {
-      assert.ok(fetchCalled, 'fetch default provider was called');
-    });
+    return route
+      .authenticate({
+        send() {},
+      })
+      .then(function () {
+        assert.ok(fetchCalled, 'fetch default provider was called');
+      });
   });
 
   test('failed authentication calls accessDenied', function (assert) {
@@ -124,13 +131,17 @@ module('Unit | Routing | Authenticated Route Mixin', function (hooks) {
     let fetchCalled = false;
     let accessDeniedCalled = false;
 
-    this.owner.register('service:session', {
-      isAuthenticated: undefined,
-      fetch() {
-        fetchCalled = true;
-        return reject();
+    this.owner.register(
+      'service:session',
+      {
+        isAuthenticated: undefined,
+        fetch() {
+          fetchCalled = true;
+          return reject();
+        },
       },
-    }, { instantiate: false });
+      { instantiate: false }
+    );
     const route = createAuthenticatedRoute({
       session: service(),
       accessDenied() {
@@ -149,13 +160,17 @@ module('Unit | Routing | Authenticated Route Mixin', function (hooks) {
     let sentActionName;
     let fetchCalled = false;
 
-    this.owner.register('service:session', {
-      isAuthenticated: undefined,
-      fetch() {
-        fetchCalled = true;
-        return reject();
+    this.owner.register(
+      'service:session',
+      {
+        isAuthenticated: undefined,
+        fetch() {
+          fetchCalled = true;
+          return reject();
+        },
       },
-    }, { instantiate: false });
+      { instantiate: false }
+    );
     const route = createAuthenticatedRoute({
       session: service(),
     });
@@ -185,13 +200,17 @@ module('Unit | Routing | Authenticated Route Mixin', function (hooks) {
       targetName: 'custom.route',
     };
 
-    this.owner.register('service:session', {
-      isAuthenticated: undefined,
-      fetch() {
-        fetchCalled = true;
-        return reject();
+    this.owner.register(
+      'service:session',
+      {
+        isAuthenticated: undefined,
+        fetch() {
+          fetchCalled = true;
+          return reject();
+        },
       },
-    }, { instantiate: false });
+      { instantiate: false }
+    );
 
     const route = createAuthenticatedRoute({
       session: service(),

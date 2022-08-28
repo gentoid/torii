@@ -22,8 +22,8 @@ module('Integration | Session (open)', function (hooks) {
   });
 
   test('session starts in unauthenticated unopened state', function (assert) {
-    assert.ok(!session.get('isOpening'), 'not opening');
-    assert.ok(!session.get('isAuthenticated'), 'not authenticated');
+    assert.notOk(session.isOpening, 'not opening');
+    assert.notOk(session.get('isAuthenticated'), 'not authenticated');
   });
 
   test('starting auth sets isOpening to true', function (assert) {
@@ -46,7 +46,7 @@ module('Integration | Session (open)', function (hooks) {
     this.owner.register('torii-adapter:dummy-success', DummyAdapter);
 
     return session.open('dummy-success').then(function () {
-      assert.ok(!session.get('isOpening'), 'session is no longer opening');
+      assert.notOk(session.get('isOpening'), 'session is no longer opening');
       assert.ok(session.get('isAuthenticated'), 'session is authenticated');
     });
   });
@@ -82,12 +82,13 @@ module('Integration | Session (close) ', function (hooks) {
 
     // Put the session in an open state
     user = { email: 'fake@fake.com' };
-    session.get('stateMachine').transitionTo('opening');
-    session.get('stateMachine').send('finishOpen', { currentUser: user });
+    const machine = session.stateMachine;
+    machine.send('OPENING');
+    machine.send('FINISH_OPEN', { data: { currentUser: user } });
   });
 
   test('session starts in authenticated opened state', function (assert) {
-    assert.ok(session.get('isAuthenticated'), 'not authenticated');
+    assert.ok(session.get('isAuthenticated'), 'authenticated');
     assert.deepEqual(session.get('currentUser'), user, 'has currentUser');
   });
 
@@ -129,7 +130,7 @@ module('Integration | Session (close) ', function (hooks) {
       function (error) {
         assert.ok(!session.get('isWorking'), 'isWorking is false');
         assert.ok(!session.get('isAuthenticated'), 'isAuthenticated is true');
-        assert.equal(session.get('errorMessage'), error, 'error is present');
+        assert.equal(session.errorMessage, error, 'error is present');
       }
     );
   });

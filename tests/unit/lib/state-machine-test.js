@@ -1,28 +1,39 @@
 /* eslint-disable qunit/no-negated-ok */
-import StateMachine from 'torii/lib/state-machine';
 import { module, test } from 'qunit';
+import { createMachine, interpret } from 'xstate';
 
 module('Unit | Lib | State Machine', function (/*hooks*/) {
   test('can transition from one state to another', function (assert) {
-    var sm = new StateMachine({
-      initialState: 'initial',
-      states: {
-        initial: {
-          foo: 'bar',
+    const sm = interpret(
+      createMachine({
+        predictableActionArguments: true,
+        initial: 'initial',
+        context: {},
+        states: {
+          initial: {
+            entry: (context) => (context.foo = 'bar'),
+            on: {
+              STARTED: {
+                target: 'started',
+              },
+            },
+          },
+          started: {
+            entry: (context) => (context.baz = 'blah'),
+          },
         },
-        started: {
-          baz: 'blah',
-        },
-      },
-    });
+      })
+    );
 
-    assert.equal(sm.currentStateName, 'initial');
-    assert.equal(sm.state.foo, 'bar');
+    sm.start();
+
+    assert.equal(sm.state.value, 'initial');
+    assert.equal(sm.state.context.foo, 'bar');
     assert.ok(!sm.state.baz, 'has no baz state when initial');
 
-    sm.transitionTo('started');
-    assert.equal(sm.currentStateName, 'started');
-    assert.equal(sm.state.baz, 'blah');
+    sm.send('STARTED');
+    assert.equal(sm.state.value, 'started');
+    assert.equal(sm.state.context.baz, 'blah');
     assert.ok(!sm.state.foo, 'has no foo state when started');
   });
 });
