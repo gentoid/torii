@@ -28,7 +28,7 @@ module('Unit | Lib | QueryString', function (hooks) {
   });
 
   test('looks up properties by camelized name', function (assert) {
-    const qs = QueryString.create({
+    const qs = new QueryString({
       provider: obj,
       requiredParams: ['client_id'],
     });
@@ -43,7 +43,7 @@ module('Unit | Lib | QueryString', function (hooks) {
   test('does not fail when requiredParams or optionalParams are frozen', function (assert) {
     assert.expect(0);
 
-    QueryString.create({
+    new QueryString({
       provider: obj,
       requiredParams: freeze(['client_id']),
       optionalParams: freeze(['optional_property']),
@@ -51,7 +51,7 @@ module('Unit | Lib | QueryString', function (hooks) {
   });
 
   test('joins properties with "&"', function (assert) {
-    const qs = QueryString.create({
+    const qs = new QueryString({
       provider: obj,
       requiredParams: ['client_id', 'response_type'],
     });
@@ -64,7 +64,7 @@ module('Unit | Lib | QueryString', function (hooks) {
   });
 
   test('url encodes values', function (assert) {
-    const qs = QueryString.create({
+    const qs = new QueryString({
       provider: obj,
       requiredParams: ['redirect_uri'],
     });
@@ -77,7 +77,7 @@ module('Unit | Lib | QueryString', function (hooks) {
   });
 
   test('assert.throws error if property exists as non-camelized form', function (assert) {
-    const qs = QueryString.create({
+    const qs = new QueryString({
       provider: obj,
       requiredParams: ['additional_param'],
     });
@@ -92,7 +92,7 @@ module('Unit | Lib | QueryString', function (hooks) {
   });
 
   test('assert.throws error if property does not exist', function (assert) {
-    const qs = QueryString.create({
+    const qs = new QueryString({
       provider: obj,
       requiredParams: ['nonexistent_property'],
     });
@@ -107,7 +107,7 @@ module('Unit | Lib | QueryString', function (hooks) {
   });
 
   test('no error thrown when specifying optional properties that do not exist', function (assert) {
-    const qs = QueryString.create({
+    const qs = new QueryString({
       provider: obj,
       requiredParams: [],
       optionalParams: ['nonexistent_property'],
@@ -121,7 +121,7 @@ module('Unit | Lib | QueryString', function (hooks) {
   });
 
   test('optional properties is added if it does exist', function (assert) {
-    const qs = QueryString.create({
+    const qs = new QueryString({
       provider: obj,
       requiredParams: [],
       optionalParams: ['optional_property'],
@@ -135,7 +135,7 @@ module('Unit | Lib | QueryString', function (hooks) {
   });
 
   test('value of false gets into url', function (assert) {
-    const qs = QueryString.create({
+    const qs = new QueryString({
       provider: obj,
       requiredParams: ['false_prop'],
     });
@@ -148,7 +148,7 @@ module('Unit | Lib | QueryString', function (hooks) {
   });
 
   test('uniq-ifies required params', function (assert) {
-    const qs = QueryString.create({
+    const qs = new QueryString({
       provider: obj,
       requiredParams: ['client_id', 'client_id'],
     });
@@ -161,7 +161,7 @@ module('Unit | Lib | QueryString', function (hooks) {
   });
 
   test('uniq-ifies optional params', function (assert) {
-    const qs = QueryString.create({
+    const qs = new QueryString({
       provider: obj,
       requiredParams: [],
       optionalParams: ['client_id', 'client_id'],
@@ -176,7 +176,7 @@ module('Unit | Lib | QueryString', function (hooks) {
 
   test('assert.throws if optionalParams includes any requiredParams', function (assert) {
     assert.throws(function () {
-      QueryString.create({
+      new QueryString({
         provider: obj,
         requiredParams: ['client_id'],
         optionalParams: ['client_id'],

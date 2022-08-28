@@ -122,7 +122,7 @@ var Oauth2 = Provider.extend({
     var requiredParams = this.get('requiredUrlParams'),
       optionalParams = this.get('optionalUrlParams');
 
-    var qs = QueryString.create({
+    var qs = new QueryString({
       provider: this,
       requiredParams: requiredParams,
       optionalParams: optionalParams,
