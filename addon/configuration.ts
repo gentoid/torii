@@ -1,40 +1,54 @@
 import { get, computed } from '@ember/object';
-import Service from '@ember/service';
 
 type Callback<T> = {
   (): T;
 };
 
+interface Config {
+  name: string;
+}
+
+type Default<C extends Config, K extends keyof C> = C[K] | Callback<C[K]>;
+
 function isFunction(value: unknown): value is Function {
   return typeof value === 'function';
 }
 
-export default class ConfigureService<C extends { name: string }> {
+export default class ConfigureService<C extends Config> {
   #config: C;
 
   constructor(config: C) {
     this.#config = config;
   }
 
-  getValue<K extends keyof C & string>(
+  getValue<K extends keyof C>(key: K): NonNullable<C[K]>;
+  getValue<K extends keyof C>(
     key: K,
-    defaultValue?: C[K] | Callback<C[K]>
-  ): C[K] {
+    defaultValue: NonNullable<Default<C, K>>
+  ): NonNullable<C[K]>;
+  getValue<K extends keyof C>(key: K, defaultValue: Default<C, K>): C[K];
+
+  getValue<K extends keyof C>(
+    key: K,
+    defaultValue?: NonNullable<Default<C, K>>
+  ): NonNullable<C[K]> {
     const value = this.#config[key];
 
     if (typeof value !== 'undefined') {
+      // @ts-expect-error
       return value;
     }
 
     if (!defaultValue) {
       throw new Error(
-        `Expected configuration value ${key} to be defined for provider named ${this.getValue(
-          'name'
-        )}`
+        `Expected configuration value ${
+          key as string
+        } to be defined for provider named ${this.getValue('name')}`
       );
     }
 
     if (isFunction(defaultValue)) {
+      // @ts-expect-error
       return defaultValue();
     }
 
