@@ -39,7 +39,8 @@ export default class ConfigureService<C extends Config> {
       return value;
     }
 
-    if (!defaultValue) {
+    // no defaultValue's been provided
+    if (arguments.length === 1) {
       throw new Error(
         `Expected configuration value ${
           key as string
@@ -52,6 +53,7 @@ export default class ConfigureService<C extends Config> {
       return defaultValue();
     }
 
+    // @ts-expect-error
     return defaultValue;
   }
 
