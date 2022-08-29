@@ -8,10 +8,11 @@ function isValue<T>(value: T | undefined | null): value is T {
   return Boolean(value || value === false);
 }
 
-function getParamValue<
-  T extends Record<string, unknown>,
-  K extends keyof T & string
->(obj: T, paramName: K, optional?: boolean) {
+function getParamValue<T extends {}>(
+  obj: T,
+  paramName: string,
+  optional?: boolean
+) {
   var camelizedName = camelize(paramName),
     value = get(obj, camelizedName) as string | boolean;
 
@@ -42,31 +43,22 @@ function getParamValue<
   return isValue(value) ? encodeURIComponent(value) : undefined;
 }
 
-function getOptionalParamValue<
-  T extends Record<string, unknown>,
-  K extends keyof T & string
->(obj: T, paramName: K) {
+function getOptionalParamValue<T extends {}>(obj: T, paramName: string) {
   return getParamValue(obj, paramName, true);
 }
 
-export interface QueryStringParams<
-  T extends Record<string, unknown>,
-  K extends keyof T & string
-> {
+export interface QueryStringParams<T extends {}> {
   provider: T;
-  requiredParams: Array<K>;
-  optionalParams?: Array<K>;
+  requiredParams: Array<string>;
+  optionalParams?: Array<string>;
 }
 
-export default class QueryString<
-  T extends Record<string, unknown>,
-  K extends keyof T & string
-> extends EmberObject {
+export default class QueryString<T extends {}> extends EmberObject {
   obj: T;
-  urlParams: Array<K>;
-  optionalUrlParams: Array<K>;
+  urlParams: Array<string>;
+  optionalUrlParams: Array<string>;
 
-  constructor(params: QueryStringParams<T, K>) {
+  constructor(params: QueryStringParams<T>) {
     super();
     this.obj = params.provider;
     this.urlParams = A(params.requiredParams.slice()).uniq();
