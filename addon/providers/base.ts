@@ -48,7 +48,7 @@ export default class BaseProvider<
     var owner = getOwner(this);
     var remoteServiceName =
       this.configuredRemoteServiceName ||
-      this.config.getValue('remoteServiceName') ||
+      this.config.getValue('remoteServiceName', undefined) ||
       DEFAULT_REMOTE_SERVICE_NAME;
 
     return owner?.lookup(`torii-service:${remoteServiceName}`) as
