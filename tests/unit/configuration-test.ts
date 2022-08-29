@@ -3,6 +3,7 @@ import { module, test } from 'qunit';
 
 module('Unit | Configuration', function (hooks) {
   interface Config {
+    name: string;
     apiKey: string;
     scope?: string;
     redirectUri?: string;
@@ -15,7 +16,7 @@ module('Unit | Configuration', function (hooks) {
     let message;
 
     try {
-      const testable = new Testable({ name: 'test' }, {} as Config);
+      const testable = new Testable({ name: 'test' } as Config);
       testable.getValue('apiKey');
     } catch (error: any) {
       threw = true;
@@ -32,24 +33,26 @@ module('Unit | Configuration', function (hooks) {
   });
 
   test('it should read values', function (assert) {
-    const testable = new Testable({ name: 'test' }, { apiKey: 'item val' });
+    const testable = new Testable({ name: 'test', apiKey: 'item val' });
 
     assert.equal(testable.getValue('apiKey'), 'item val');
   });
 
   test('it should read default values', function (assert) {
-    const testable = new Testable(
-      { name: 'test' },
-      { apiKey: 'item val', scope: 'email' }
-    );
+    const testable = new Testable({
+      name: 'test',
+      apiKey: 'item val',
+      scope: 'email',
+    });
     assert.equal(testable.getValue('scope'), 'email');
   });
 
   test('it should override default values', function (assert) {
-    const testable = new Testable(
-      { name: 'test' },
-      { apiKey: 'api key', scope: 'email' }
-    );
+    const testable = new Testable({
+      name: 'test',
+      apiKey: 'api key',
+      scope: 'email',
+    });
 
     testable.setValue('scope', 'baz');
 
@@ -57,7 +60,7 @@ module('Unit | Configuration', function (hooks) {
   });
 
   test('it read default values from a function', function (assert) {
-    const testable = new Testable({ name: 'test' }, { apiKey: 'api key' });
+    const testable = new Testable({ name: 'test', apiKey: 'api key' });
 
     assert.equal(
       testable.getValue('redirectUri', () => 'foo'),

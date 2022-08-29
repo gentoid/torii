@@ -9,12 +9,10 @@ function isFunction(value: unknown): value is Function {
   return typeof value === 'function';
 }
 
-export default class ConfigureService<C extends Object> {
+export default class ConfigureService<C extends { name: string }> {
   #config: C;
-  readonly name: string;
 
-  constructor(params: { name: string }, config: C) {
-    this.name = params.name;
+  constructor(config: C) {
     this.#config = config;
   }
 
@@ -30,7 +28,9 @@ export default class ConfigureService<C extends Object> {
 
     if (!defaultValue) {
       throw new Error(
-        `Expected configuration value ${key} to be defined for provider named ${this.name}`
+        `Expected configuration value ${key} to be defined for provider named ${this.getValue(
+          'name'
+        )}`
       );
     }
 
