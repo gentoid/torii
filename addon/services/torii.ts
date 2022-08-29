@@ -2,6 +2,7 @@
 import { getOwner } from '@ember/application';
 import Service from '@ember/service';
 import { Promise as EmberPromise } from 'rsvp';
+import OAuth2Provider from 'torii/providers/oauth2-code';
 
 const missingProviderErrorMessage = (providerName: string) =>
   `Expected a provider named '${providerName}', did you forget to register it?`;
@@ -9,12 +10,17 @@ const missingProviderErrorMessage = (providerName: string) =>
 const missingMethodErrorMessage = (providerName: string, methodName: string) =>
   `Expected provider '${providerName}' to define the '${methodName}' method`;
 
+type ToriiProvider = OAuth2Provider;
+
 function proxyToProvider(
   methodName: 'open' | 'fetch' | 'close',
   requireMethod?: boolean
 ) {
   return function (this: ToriiService, providerName: string, options?: Object) {
-    const provider = getOwner(this)?.lookup(`torii-provider:${providerName}`);
+    const provider = getOwner(this)?.lookup(
+      `torii-provider:${providerName}`
+    ) as ToriiProvider | undefined;
+
     if (!provider) {
       throw new Error(missingProviderErrorMessage(providerName));
     }
