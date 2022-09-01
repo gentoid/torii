@@ -28,15 +28,15 @@ module(
     test('BaseProvider subclass must have baseUrl', function (assert) {
       const provider = new OAuth2Provider({
         name: 'some name',
-      } as Oauth2ProviderParams);
+      } as Oauth2ProviderParams); // "as" since we're testing for missing the "baseUrl" param
 
       assert.throws(function () {
         provider.buildUrl();
-      }, /Definition of property baseUrl by a subclass is required./);
+      }, 'Expected configuration value baseUrl to be defined for provider named some name');
     });
 
     test('Provider requires an apiKey', function (assert) {
-      const provider = new OAuth2Provider(params as Oauth2ProviderParams);
+      const provider = new OAuth2Provider(params as Oauth2ProviderParams); // "as" since we're testing for missing the "apiKey" param
 
       assert.throws(function () {
         provider.buildUrl();
@@ -44,7 +44,10 @@ module(
     });
 
     test('Provider generates a URL with required config', function (assert) {
-      const provider = new OAuth2Provider({ ...params, apiKey: 'dummyKey' });
+      const provider = new OAuth2Provider({
+        ...params,
+        apiKey: 'dummyKey',
+      });
 
       assert.equal(
         provider.buildUrl(),
@@ -70,7 +73,7 @@ module(
     test('Provider#open assert.throws when any required response params are missing', function (assert) {
       assert.expect(3);
 
-      class MyProvider extends OAuth2Provider {
+      class MyProvider extends OAuth2Provider<Oauth2ProviderParams> {
         get popup() {
           return {
             async open() /*url, responseParams*/ {
@@ -105,7 +108,7 @@ module(
     test('should use the value of provider.responseType as key for the authorizationCode', function (assert) {
       assert.expect(2);
 
-      class MyProvider extends OAuth2Provider {
+      class MyProvider extends OAuth2Provider<Oauth2ProviderParams> {
         get popup() {
           return {
             async open() /*url, responseParams*/ {
@@ -143,7 +146,10 @@ module(
     test('provider generates a random state parameter', function (assert) {
       assert.expect(1);
 
-      const provider = new OAuth2Provider({ ...params, apiKey: 'api key' });
+      const provider = new OAuth2Provider({
+        ...params,
+        apiKey: 'api key',
+      });
 
       assert.ok(
         /^[A-Za-z0-9]{16}$/.test(provider.state),
@@ -154,7 +160,10 @@ module(
     test('provider caches the generated random state', function (assert) {
       assert.expect(1);
 
-      const provider = new OAuth2Provider({ ...params, apiKey: 'key' });
+      const provider = new OAuth2Provider({
+        ...params,
+        apiKey: 'key',
+      });
       const state = provider.state;
 
       assert.equal(provider.state, state, 'random state value is cached');
@@ -179,7 +188,7 @@ module(
     test('URI-decodes the authorization code', function (assert) {
       assert.expect(1);
 
-      class MyProvider extends OAuth2Provider {
+      class MyProvider extends OAuth2Provider<Oauth2ProviderParams> {
         get popup() {
           return {
             async open() /*url, responseParams*/ {

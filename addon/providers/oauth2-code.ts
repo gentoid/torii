@@ -126,7 +126,7 @@ export default class OAuth2Provider<
     return this.config.getValue('clientId', () => this.apiKey);
   }
 
-  get state() {
+  get state(): string {
     return this.config.getValue('state', () => this.randomState);
   }
 
