@@ -47,18 +47,34 @@ function getOptionalParamValue<T extends {}>(obj: T, paramName: string) {
   return getParamValue(obj, paramName, true);
 }
 
-export interface QueryStringParams<T extends {}> {
+type ToCamel<S extends string> = S extends `${infer Head}_${infer Tail}`
+  ? `${Head}${Capitalize<ToCamel<Tail>>}`
+  : S;
+
+type CamelKey<R extends ReadonlyArray<string>> = {
+  [K in ToCamel<R[number]>]: string;
+};
+
+export interface QueryStringParams<
+  T extends CamelKey<R> & Partial<CamelKey<O>>,
+  R extends ReadonlyArray<string>,
+  O extends ReadonlyArray<string>
+> {
   provider: T;
-  requiredParams: Array<string>;
-  optionalParams?: Array<string>;
+  readonly requiredParams: R;
+  readonly optionalParams?: O;
 }
 
-export default class QueryString<T extends {}> extends EmberObject {
+export default class QueryString<
+  T extends CamelKey<R> & Partial<CamelKey<O>>,
+  R extends ReadonlyArray<string>,
+  O extends ReadonlyArray<string>
+> extends EmberObject {
   obj: T;
-  urlParams: Array<string>;
-  optionalUrlParams: Array<string>;
+  urlParams: ReadonlyArray<string>;
+  optionalUrlParams: ReadonlyArray<string>;
 
-  constructor(params: QueryStringParams<T>) {
+  constructor(params: QueryStringParams<T, R, O>) {
     super();
     this.obj = params.provider;
     this.urlParams = A(params.requiredParams.slice()).uniq();
