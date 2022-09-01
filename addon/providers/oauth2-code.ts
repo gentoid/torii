@@ -15,17 +15,10 @@ function currentUrl() {
   return url;
 }
 
-export type Oauth2ProviderParams = Params & Config;
-
-interface Params extends BaseProviderParams {
-  name: string;
+export interface Oauth2ProviderParams extends BaseProviderParams {
   baseUrl: string;
-  // redirectUri: string;
   responseParams: Array<string>;
   responseType?: string;
-}
-
-interface Config {
   apiKey: string;
   scope?: string;
   clientId?: string;
@@ -48,8 +41,10 @@ interface Config {
  *
  * @class Oauth2Provider
  */
-export default class OAuth2Provider extends BaseProvider<Oauth2ProviderParams> {
-  concatenatedProperties = ['requiredUrlParams', 'optionalUrlParams'];
+export default class OAuth2Provider<
+  Config extends Oauth2ProviderParams
+> extends BaseProvider<Config> {
+  // concatenatedProperties = ['requiredUrlParams', 'optionalUrlParams'];
 
   /**
    * The parameters that must be included as query params in the 3rd-party provider's url that we build.
@@ -63,7 +58,12 @@ export default class OAuth2Provider extends BaseProvider<Oauth2ProviderParams> {
    *
    * @property {array} requiredUrlParams
    */
-  requiredUrlParams = ['response_type', 'client_id', 'redirect_uri', 'state'];
+  #requiredUrlParams = [
+    'response_type',
+    'client_id',
+    'redirect_uri',
+    'state',
+  ] as const;
 
   /**
    * Parameters that may be included in the 3rd-party provider's url that we build.
@@ -71,17 +71,21 @@ export default class OAuth2Provider extends BaseProvider<Oauth2ProviderParams> {
    *
    * @property {array} optionalUrlParams
    */
-  optionalUrlParams = ['scope'];
+  #optionalUrlParams = ['scope'] as const;
+
+  randomState = randomUrlSafe(16);
+
+  constructor(params: Config) {
+    super({ responseType: 'code', ...params });
+  }
 
   /**
    * The base url for the 3rd-party provider's OAuth2 flow (example: 'https://github.com/login/oauth/authorize')
    *
    * @property {string} baseUrl
    */
-  #baseUrl: string;
-
   get baseUrl() {
-    return this.required('baseUrl', this.#baseUrl);
+    return this.required('baseUrl', this.config.getValue('baseUrl'));
   }
 
   /**
@@ -93,23 +97,16 @@ export default class OAuth2Provider extends BaseProvider<Oauth2ProviderParams> {
    *
    * @property {array} responseParams
    */
-  responseParams: Array<string>;
+  get responseParams() {
+    return this.config.getValue('responseParams');
+  }
 
   /**
    * The oauth response type we expect from the third party provider. Hardcoded to 'code' for oauth2-code flows
    * @property {string} responseType
    */
-  responseType: string;
-
-  randomState = randomUrlSafe(16);
-
-  constructor(params: Oauth2ProviderParams) {
-    super(params);
-    this.#baseUrl = params.baseUrl;
-    // this.redirectUri = params.redirectUri;
-    this.responseParams = params.responseParams;
-    this.responseType = params.responseType ?? 'code';
-    // const apiKey = configurable<string>('apiKey');
+  get responseType() {
+    return this.config.getValue('responseType');
   }
 
   /**
@@ -119,13 +116,6 @@ export default class OAuth2Provider extends BaseProvider<Oauth2ProviderParams> {
    */
   get apiKey() {
     return this.config.getValue('apiKey');
-  }
-
-  get redirectUri() {
-    return this.config.getValue(
-      'redirectUri',
-      () => `${currentUrl()}torii/redirect.html`
-    );
   }
 
   get scope() {
@@ -140,14 +130,18 @@ export default class OAuth2Provider extends BaseProvider<Oauth2ProviderParams> {
     return this.config.getValue('state', () => this.randomState);
   }
 
-  buildQueryString() {
-    var requiredParams = this.requiredUrlParams,
-      optionalParams = this.optionalUrlParams;
+  get redirectUri() {
+    return this.config.getValue(
+      'redirectUri',
+      () => `${currentUrl()}torii/redirect.html`
+    );
+  }
 
+  buildQueryString() {
     var qs = new QueryString({
       provider: this,
-      requiredParams: requiredParams,
-      optionalParams: optionalParams,
+      requiredParams: this.#requiredUrlParams,
+      optionalParams: this.#optionalUrlParams,
     });
     return qs.toString();
   }
