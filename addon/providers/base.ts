@@ -15,7 +15,7 @@ export interface BaseProviderParams {
  * @class BaseProvider
  */
 export default class BaseProvider<
-  ExtendedConfig extends BaseProviderParams
+  Config extends BaseProviderParams
 > extends EmberObject {
   /**
    * The name of the provider
@@ -23,16 +23,20 @@ export default class BaseProvider<
    */
   #name: string;
 
+  protected config: ConfigureService<Config>;
+
+  constructor(params: Config) {
+    super();
+    this.#name = params.name;
+    this.config = new ConfigureService<Config>(params);
+  }
+
   get name() {
     return this.required('name', this.#name);
   }
 
-  protected config: ConfigureService<ExtendedConfig>;
-
-  constructor(params: ExtendedConfig) {
-    super();
-    this.#name = params.name;
-    this.config = new ConfigureService<ExtendedConfig>(params);
+  get remoteServiceName() {
+    return this.config.getValue('remoteServiceName', undefined);
   }
 
   /**
@@ -47,7 +51,7 @@ export default class BaseProvider<
   get popup() {
     var owner = getOwner(this);
     var remoteServiceName =
-      this.configuredRemoteServiceName ||
+      this.remoteServiceName ||
       this.config.getValue('remoteServiceName', undefined) ||
       DEFAULT_REMOTE_SERVICE_NAME;
 
@@ -56,14 +60,7 @@ export default class BaseProvider<
       | undefined;
   }
 
-  get configuredRemoteServiceName() {
-    return this.config.getValue('remoteServiceName', undefined);
-  }
-
-  protected required<T>(
-    key: keyof ExtendedConfig & string,
-    value: T | undefined
-  ): T {
+  protected required<T>(key: keyof Config & string, value: T | undefined): T {
     if (value) {
       return value;
     }
