@@ -3,8 +3,7 @@ import { A } from '@ember/array';
 import { camelize } from '@ember/string';
 import EmberObject, { get } from '@ember/object';
 
-function isValue<T>(value: T | undefined | null): value is T {
-  // @ts-expect-error
+function isValue<T>(value: T | false | undefined | null): value is T | false {
   return Boolean(value || value === false);
 }
 
