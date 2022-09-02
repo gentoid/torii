@@ -16,8 +16,8 @@ function currentUrl() {
 }
 
 export interface Oauth2ProviderParams extends BaseProviderParams {
-  baseUrl: string;
-  responseParams: Array<string>;
+  baseUrl?: string;
+  responseParams?: Array<string>;
   responseType?: string;
   apiKey: string;
   scope?: string;
