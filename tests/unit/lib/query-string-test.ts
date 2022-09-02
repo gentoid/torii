@@ -1,37 +1,25 @@
-import { run } from '@ember/runloop';
 import EmberObject from '@ember/object';
 import QueryString from 'torii/lib/query-string';
 import { module, test } from 'qunit';
 
-let { freeze } = Object;
+const clientId = 'abcdef';
+const responseType = 'code';
+const redirectUri = 'http://localhost.dev:3000/xyz/pdq';
+const optionalProperty = 'i-am-optional';
 
-let obj;
-const clientId = 'abcdef',
-  responseType = 'code',
-  redirectUri = 'http://localhost.dev:3000/xyz/pdq',
-  optionalProperty = 'i-am-optional';
+const params = {
+  clientId: clientId,
+  responseType: responseType,
+  redirectUri: redirectUri,
+  additional_param: 'not-camelized',
+  optionalProperty: optionalProperty,
+  falseProp: 'false',
+};
 
 module('Unit | Lib | QueryString', function (hooks) {
-  hooks.beforeEach(function () {
-    obj = EmberObject.create({
-      clientId: clientId,
-      responseType: responseType,
-      redirectUri: redirectUri,
-      additional_param: 'not-camelized',
-      optionalProperty: optionalProperty,
-      falseProp: false,
-    });
-  });
-
-  hooks.afterEach(function () {
-    run(obj, 'destroy');
-  });
-
   test('looks up properties by camelized name', function (assert) {
-    const qs = new QueryString({
-      provider: obj,
-      requiredParams: ['client_id'],
-    });
+    const provider: typeof params = EmberObject.create(params);
+    const qs = new QueryString(provider, { requiredParams: ['client_id'] });
 
     assert.equal(
       qs.toString(),
@@ -42,17 +30,17 @@ module('Unit | Lib | QueryString', function (hooks) {
 
   test('does not fail when requiredParams or optionalParams are frozen', function (assert) {
     assert.expect(0);
+    const provider: typeof params = EmberObject.create(params);
 
-    new QueryString({
-      provider: obj,
-      requiredParams: freeze(['client_id']),
-      optionalParams: freeze(['optional_property']),
+    new QueryString(provider, {
+      requiredParams: ['client_id'],
+      optionalParams: ['optional_property'],
     });
   });
 
   test('joins properties with "&"', function (assert) {
-    const qs = new QueryString({
-      provider: obj,
+    const provider: typeof params = EmberObject.create(params);
+    const qs = new QueryString(provider, {
       requiredParams: ['client_id', 'response_type'],
     });
 
@@ -64,8 +52,8 @@ module('Unit | Lib | QueryString', function (hooks) {
   });
 
   test('url encodes values', function (assert) {
-    const qs = new QueryString({
-      provider: obj,
+    const provider: typeof params = EmberObject.create(params);
+    const qs = new QueryString(provider, {
       requiredParams: ['redirect_uri'],
     });
 
@@ -77,8 +65,8 @@ module('Unit | Lib | QueryString', function (hooks) {
   });
 
   test('assert.throws error if property exists as non-camelized form', function (assert) {
-    const qs = new QueryString({
-      provider: obj,
+    const provider: typeof params = EmberObject.create(params);
+    const qs = new QueryString(provider, {
       requiredParams: ['additional_param'],
     });
 
@@ -92,8 +80,8 @@ module('Unit | Lib | QueryString', function (hooks) {
   });
 
   test('assert.throws error if property does not exist', function (assert) {
-    const qs = new QueryString({
-      provider: obj,
+    const provider: typeof params = EmberObject.create(params);
+    const qs = new QueryString(provider, {
       requiredParams: ['nonexistent_property'],
     });
 
@@ -107,8 +95,8 @@ module('Unit | Lib | QueryString', function (hooks) {
   });
 
   test('no error thrown when specifying optional properties that do not exist', function (assert) {
-    const qs = new QueryString({
-      provider: obj,
+    const provider: typeof params = EmberObject.create(params);
+    const qs = new QueryString(provider, {
       requiredParams: [],
       optionalParams: ['nonexistent_property'],
     });
@@ -121,8 +109,8 @@ module('Unit | Lib | QueryString', function (hooks) {
   });
 
   test('optional properties is added if it does exist', function (assert) {
-    const qs = new QueryString({
-      provider: obj,
+    const provider: typeof params = EmberObject.create(params);
+    const qs = new QueryString(provider, {
       requiredParams: [],
       optionalParams: ['optional_property'],
     });
@@ -135,8 +123,8 @@ module('Unit | Lib | QueryString', function (hooks) {
   });
 
   test('value of false gets into url', function (assert) {
-    const qs = new QueryString({
-      provider: obj,
+    const provider: typeof params = EmberObject.create(params);
+    const qs = new QueryString(provider, {
       requiredParams: ['false_prop'],
     });
 
@@ -148,8 +136,8 @@ module('Unit | Lib | QueryString', function (hooks) {
   });
 
   test('uniq-ifies required params', function (assert) {
-    const qs = new QueryString({
-      provider: obj,
+    const provider: typeof params = EmberObject.create(params);
+    const qs = new QueryString(provider, {
       requiredParams: ['client_id', 'client_id'],
     });
 
@@ -161,8 +149,8 @@ module('Unit | Lib | QueryString', function (hooks) {
   });
 
   test('uniq-ifies optional params', function (assert) {
-    const qs = new QueryString({
-      provider: obj,
+    const provider: typeof params = EmberObject.create(params);
+    const qs = new QueryString(provider, {
       requiredParams: [],
       optionalParams: ['client_id', 'client_id'],
     });
@@ -175,9 +163,9 @@ module('Unit | Lib | QueryString', function (hooks) {
   });
 
   test('assert.throws if optionalParams includes any requiredParams', function (assert) {
+    const provider: typeof params = EmberObject.create(params);
     assert.throws(function () {
-      new QueryString({
-        provider: obj,
+      new QueryString(provider, {
         requiredParams: ['client_id'],
         optionalParams: ['client_id'],
       });
