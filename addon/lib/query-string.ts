@@ -58,7 +58,7 @@ interface Params<
   O extends ReadonlyArray<string>
 > {
   requiredParams: R;
-  optionalParams: O;
+  optionalParams?: O;
 }
 
 export default class QueryString<
