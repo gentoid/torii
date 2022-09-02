@@ -27,6 +27,29 @@ export interface Oauth2ProviderParams extends BaseProviderParams {
 }
 
 /**
+ * The parameters that must be included as query params in the 3rd-party provider's url that we build.
+ * These properties are in the format that should be in the URL (i.e.,
+ * usually underscored), but they are looked up as camelCased properties
+ * on the instance of this provider. For example, if the 'client_id' is
+ * a required url param, when building the URL we look up the value of
+ * the 'clientId' (camel-cased) property and put it in the URL as
+ * 'client_id=' + this.get('clientId')
+ * Subclasses can add additional required url params.
+ */
+export const requiredParams = [
+  'response_type',
+  'client_id',
+  'redirect_uri',
+  'state',
+] as const;
+
+/**
+ * Parameters that may be included in the 3rd-party provider's url that we build.
+ * Subclasses can add additional optional url params.
+ */
+export const optionalParams = ['scope'] as const;
+
+/**
  * Implements authorization against an OAuth2 API
  * using the OAuth2 authorization flow in a popup window.
  *
@@ -44,40 +67,7 @@ export interface Oauth2ProviderParams extends BaseProviderParams {
 export default class OAuth2Provider<
   Config extends Oauth2ProviderParams
 > extends BaseProvider<Config> {
-  // concatenatedProperties = ['requiredUrlParams', 'optionalUrlParams'];
-
-  /**
-   * The parameters that must be included as query params in the 3rd-party provider's url that we build.
-   * These properties are in the format that should be in the URL (i.e.,
-   * usually underscored), but they are looked up as camelCased properties
-   * on the instance of this provider. For example, if the 'client_id' is
-   * a required url param, when building the URL we look up the value of
-   * the 'clientId' (camel-cased) property and put it in the URL as
-   * 'client_id=' + this.get('clientId')
-   * Subclasses can add additional required url params.
-   *
-   * @property {array} requiredUrlParams
-   */
-  #requiredUrlParams = [
-    'response_type',
-    'client_id',
-    'redirect_uri',
-    'state',
-  ] as const;
-
-  /**
-   * Parameters that may be included in the 3rd-party provider's url that we build.
-   * Subclasses can add additional optional url params.
-   *
-   * @property {array} optionalUrlParams
-   */
-  #optionalUrlParams = ['scope'] as const;
-
   randomState = randomUrlSafe(16);
-
-  constructor(params: Config) {
-    super({ responseType: 'code', ...params });
-  }
 
   /**
    * The base url for the 3rd-party provider's OAuth2 flow (example: 'https://github.com/login/oauth/authorize')
@@ -106,7 +96,7 @@ export default class OAuth2Provider<
    * @property {string} responseType
    */
   get responseType() {
-    return this.config.getValue('responseType');
+    return this.config.getValue('responseType', 'code');
   }
 
   /**
@@ -138,11 +128,7 @@ export default class OAuth2Provider<
   }
 
   buildQueryString() {
-    var qs = new QueryString({
-      provider: this,
-      requiredParams: this.#requiredUrlParams,
-      optionalParams: this.#optionalUrlParams,
-    });
+    var qs = new QueryString(this, { requiredParams, optionalParams });
     return qs.toString();
   }
 
