@@ -53,14 +53,12 @@ type CamelKey<R extends ReadonlyArray<string>> = {
   [K in ToCamel<R[number]>]: string;
 };
 
-export interface QueryStringParams<
-  T extends CamelKey<R> & Partial<CamelKey<O>>,
+interface Params<
   R extends ReadonlyArray<string>,
   O extends ReadonlyArray<string>
 > {
-  provider: T;
-  readonly requiredParams: R;
-  readonly optionalParams?: O;
+  requiredParams: R;
+  optionalParams: O;
 }
 
 export default class QueryString<
@@ -72,11 +70,11 @@ export default class QueryString<
   urlParams: ReadonlyArray<string>;
   optionalUrlParams: ReadonlyArray<string>;
 
-  constructor(params: QueryStringParams<T, R, O>) {
+  constructor(provider: T, { requiredParams, optionalParams }: Params<R, O>) {
     super();
-    this.obj = params.provider;
-    this.urlParams = A(params.requiredParams.slice()).uniq();
-    this.optionalUrlParams = A(params.optionalParams?.slice() || []).uniq();
+    this.obj = provider;
+    this.urlParams = A(requiredParams.slice()).uniq();
+    this.optionalUrlParams = A(optionalParams?.slice() || []).uniq();
 
     this.optionalUrlParams.forEach((param) => {
       if (this.urlParams.indexOf(param) > -1) {
