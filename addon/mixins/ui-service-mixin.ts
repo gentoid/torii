@@ -10,18 +10,23 @@ import { EmberRunTimer } from '@ember/runloop/types';
 export const CURRENT_REQUEST_KEY = '__torii_request';
 export const WARNING_KEY = '__torii_redirect_warning';
 
-interface Params<Options extends Object> {
+interface Provider<Options extends Object> {
   openRemote: (
     url: string,
     pendingRequestKey: string,
-    options: Options
+    options?: Options
   ) => void;
   pollRemote: () => void;
   closeRemote: () => void;
 }
 
+export interface UiServiceParams<Options extends Object> {
+  remoteIdGenerator?: { generate(): string };
+  provider: Provider<Options>;
+}
+
 export default class UiService<Options extends Object> {
-  remoteIdGenerator = UUIDGenerator;
+  remoteIdGenerator;
   polling?: EmberRunTimer;
   timeout?: EmberRunTimer;
 
@@ -29,14 +34,12 @@ export default class UiService<Options extends Object> {
   oneDidCloseListeners: Array<() => void> = [];
 
   remote: null | Window = null;
-  openRemote;
-  pollRemote;
-  closeRemote;
 
-  constructor(params: Params<Options>) {
-    this.openRemote = params.openRemote;
-    this.pollRemote = params.pollRemote;
-    this.closeRemote = params.closeRemote;
+  provider: Provider<Options>;
+
+  constructor(params: UiServiceParams<Options>) {
+    this.remoteIdGenerator = params.remoteIdGenerator ?? UUIDGenerator;
+    this.provider = params.provider;
   }
 
   // Open a remote window. Returns a promise that resolves or rejects
@@ -52,18 +55,16 @@ export default class UiService<Options extends Object> {
   open<Keys extends ReadonlyArray<string>>(
     url: string,
     keys: Keys,
-    options: Options
+    options?: Options
   ) {
-    let service = this;
-    let lastRemote = this.remote;
     let storageToriiEventHandler: (event: StorageEvent) => void;
 
-    return new EmberPromise<FromKeys<Keys>>(function (resolve, reject) {
-      if (lastRemote) {
-        service.close();
+    return new EmberPromise<FromKeys<Keys>>((resolve, reject) => {
+      if (this.remote) {
+        this.close();
       }
 
-      var remoteId = service.remoteIdGenerator.generate();
+      var remoteId = this.remoteIdGenerator.generate();
       storageToriiEventHandler = function (storageEvent) {
         const key = storageEvent.key;
         const newValue = storageEvent.newValue;
@@ -83,27 +84,31 @@ export default class UiService<Options extends Object> {
       localStorage.setItem(CURRENT_REQUEST_KEY, pendingRequestKey);
       localStorage.removeItem(WARNING_KEY);
 
-      service.openRemote(url, pendingRequestKey, options);
-      service.schedulePolling();
+      this.provider.openRemote(url, pendingRequestKey, options);
+      this.schedulePolling();
 
       var onbeforeunload = window.onbeforeunload;
-      window.onbeforeunload = function () {
+      const service = this;
+      window.onbeforeunload = function (
+        this: Window | WindowEventHandlers,
+        event
+      ) {
         if (typeof onbeforeunload === 'function') {
           // @ts-expect-error
-          onbeforeunload();
+          onbeforeunload(event);
         }
         service.close();
       };
 
-      if (service.remote && !service.remote.closed) {
-        service.remote.focus();
+      if (this.remote && !this.remote.closed) {
+        this.remote.focus();
       } else {
         localStorage.removeItem(CURRENT_REQUEST_KEY);
         reject(new Error('remote could not open or was closed'));
         return;
       }
 
-      service.oneDidCloseListeners.push(() => {
+      this.oneDidCloseListeners.push(() => {
         let hasWarning = localStorage.getItem(WARNING_KEY);
         if (hasWarning) {
           localStorage.removeItem(WARNING_KEY);
@@ -139,16 +144,16 @@ export default class UiService<Options extends Object> {
       });
 
       window.addEventListener('storage', storageToriiEventHandler);
-    }).finally(function () {
+    }).finally(() => {
       // didClose will reject this same promise, but it has already resolved.
-      service.close();
+      this.close();
       window.removeEventListener('storage', storageToriiEventHandler);
     });
   }
 
   close() {
     if (this.remote) {
-      this.closeRemote();
+      this.provider.closeRemote();
       this.remote = null;
       this.onDidClose();
     }
@@ -163,7 +168,7 @@ export default class UiService<Options extends Object> {
     this.polling = later(
       this,
       () => {
-        this.pollRemote();
+        this.provider.pollRemote();
         this.schedulePolling();
       },
       35

@@ -1,25 +1,28 @@
-/* eslint-disable ember/no-mixins, qunit/resolve-async, qunit/literal-compare-order, qunit/require-expect, qunit/no-negated-ok */
-import { run } from '@ember/runloop';
-import Popup from 'torii/services/popup';
 import PopupIdSerializer from 'torii/lib/popup-id-serializer';
 import { CURRENT_REQUEST_KEY } from 'torii/mixins/ui-service-mixin';
 import { module, test } from 'qunit';
+import PopupService from 'torii/services/popup';
+
+interface WindowMock {
+  name: string;
+  focus(): void;
+  close(): void;
+}
 
 module('Unit | Service | Popup', function (hooks) {
-  let popup;
-
   const originalWindowOpen = window.open;
 
-  const buildMockWindow = function (windowName) {
+  const buildMockWindow = function (windowName?: string) {
     windowName = windowName || '';
     return {
       name: windowName,
       focus() {},
       close() {},
+      closed: false,
     };
   };
 
-  const buildPopupIdGenerator = function (popupId) {
+  const buildPopupIdGenerator = function (popupId: string) {
     return {
       generate() {
         return popupId;
@@ -27,7 +30,10 @@ module('Unit | Service | Popup', function (hooks) {
     };
   };
 
-  const buildMockStorageEvent = function (popupId, redirectUrl) {
+  const buildMockStorageEvent = function (
+    popupId: string,
+    redirectUrl: string
+  ) {
     return new StorageEvent('storage', {
       key: PopupIdSerializer.serialize(popupId),
       newValue: redirectUrl,
@@ -35,27 +41,27 @@ module('Unit | Service | Popup', function (hooks) {
   };
 
   hooks.beforeEach(function () {
-    popup = Popup.create();
     localStorage.removeItem(CURRENT_REQUEST_KEY);
   });
 
   hooks.afterEach(function () {
     localStorage.removeItem(CURRENT_REQUEST_KEY);
     window.open = originalWindowOpen;
-    run(popup, 'destroy');
   });
 
   test('open resolves based on popup window', function (assert) {
     assert.expect(8);
 
-    let mockWindow;
+    let mockWindow: WindowMock;
 
     const done = assert.async();
     const expectedUrl = 'http://authServer';
     const redirectUrl = 'http://localserver?code=fr';
     const popupId = '09123-asdf';
 
-    popup = Popup.create({ remoteIdGenerator: buildPopupIdGenerator(popupId) });
+    const popup = new PopupService({
+      remoteIdGenerator: buildPopupIdGenerator(popupId),
+    });
 
     window.open = function (url, name) {
       assert.ok(true, 'calls window.open');
@@ -68,11 +74,11 @@ module('Unit | Service | Popup', function (hooks) {
       );
 
       mockWindow = buildMockWindow(name);
-      return mockWindow;
+      return mockWindow as Window;
     };
 
     popup
-      .open(expectedUrl, ['code'])
+      .open(expectedUrl, ['code'] as const)
       .then(
         function (data) {
           assert.ok(true, 'resolves promise');
@@ -107,7 +113,7 @@ module('Unit | Service | Popup', function (hooks) {
   test('open rejects when window does not open', function (assert) {
     let done = assert.async();
 
-    const closedWindow = buildMockWindow();
+    const closedWindow = buildMockWindow() as Window & { closed: boolean };
 
     closedWindow.closed = true;
     window.open = function () {
@@ -115,8 +121,8 @@ module('Unit | Service | Popup', function (hooks) {
       return closedWindow;
     };
 
-    popup
-      .open('http://some-url.com', ['code'])
+    new PopupService()
+      .open('http://some-url.com', ['code'] as const)
       .then(
         function () {
           assert.ok(false, 'resolves promise');
@@ -134,16 +140,18 @@ module('Unit | Service | Popup', function (hooks) {
 
   test('open does not resolve when receiving a storage event for the wrong popup id', function (assert) {
     let done = assert.async();
+    let isFulfilled = false;
 
     window.open = function () {
       assert.ok(true, 'calls window.open');
-      return buildMockWindow();
+      return buildMockWindow() as Window;
     };
 
-    const promise = popup
-      .open('http://someserver.com', ['code'])
+    const promise = new PopupService()
+      .open('http://someserver.com', ['code'] as const)
       .then(
         function () {
+          isFulfilled = true;
           assert.ok(false, 'resolves the open promise');
         },
         function () {
@@ -160,10 +168,7 @@ module('Unit | Service | Popup', function (hooks) {
     window.dispatchEvent(buildMockStorageEvent('invalid', 'http://authServer'));
 
     setTimeout(function () {
-      assert.ok(
-        !promise.isFulfilled,
-        'promise is not fulfulled by invalid data'
-      );
+      assert.notOk(isFulfilled, 'promise is not fulfilled by invalid data');
       assert.deepEqual(
         'http://authServer',
         localStorage.getItem(PopupIdSerializer.serialize('invalid')),
@@ -176,14 +181,14 @@ module('Unit | Service | Popup', function (hooks) {
   test('open rejects when window closes', function (assert) {
     let done = assert.async();
 
-    const mockWindow = buildMockWindow();
+    const mockWindow = buildMockWindow() as Window & { closed: boolean };
     window.open = function () {
       assert.ok(true, 'calls window.open');
       return mockWindow;
     };
 
-    popup
-      .open('some-url', ['code'])
+    new PopupService()
+      .open('some-url', ['code'] as const)
       .then(
         function () {
           assert.ok(false, 'resolved the open promise');
@@ -198,13 +203,13 @@ module('Unit | Service | Popup', function (hooks) {
   });
 
   test('localStorage state is cleaned up when parent window closes', function (assert) {
-    const mockWindow = buildMockWindow();
+    const mockWindow = buildMockWindow() as Window;
     window.open = function () {
       assert.ok(true, 'calls window.open');
       return mockWindow;
     };
 
-    popup.open('some-url', ['code']).then(
+    new PopupService().open('some-url', ['code'] as const).then(
       function () {
         assert.ok(false, 'resolved the open promise');
       },
@@ -213,7 +218,8 @@ module('Unit | Service | Popup', function (hooks) {
       }
     );
 
-    window.onbeforeunload();
+    // @ts-expect-error it requires BeforeUnloadEvent
+    window.onbeforeunload?.();
 
     assert.notOk(
       localStorage.getItem(CURRENT_REQUEST_KEY),

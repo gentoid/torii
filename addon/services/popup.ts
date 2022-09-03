@@ -1,4 +1,4 @@
-import UiService from 'torii/mixins/ui-service-mixin';
+import UiService, { UiServiceParams } from 'torii/mixins/ui-service-mixin';
 
 interface WindowSize {
   width: number;
@@ -47,15 +47,17 @@ function prepareOptions(options: WindowSize): WindowSize & WindowPosition {
   );
 }
 
+type Params = Pick<UiServiceParams<WindowSize>, 'remoteIdGenerator'>;
+
 export default class PopupService {
   uiService: UiService<WindowSize>;
 
-  constructor() {
-    this.uiService = new UiService(this);
+  constructor(params?: Params) {
+    this.uiService = new UiService({ provider: this, ...params });
   }
 
   // Open a popup window.
-  openRemote(url: string, pendingRequestKey: string, options: WindowSize) {
+  openRemote(url: string, pendingRequestKey: string, options?: WindowSize) {
     // @ts-expect-error
     var optionsString = stringifyOptions(prepareOptions(options || {}));
     this.uiService.remote = window.open(url, pendingRequestKey, optionsString);
@@ -70,5 +72,13 @@ export default class PopupService {
     if (this.uiService.remote.closed) {
       this.uiService.onDidClose();
     }
+  }
+
+  open<Keys extends ReadonlyArray<string>>(
+    url: string,
+    keys: Keys,
+    options?: WindowSize
+  ): ReturnType<UiService<WindowSize>['open']> {
+    return this.uiService.open(url, keys, options);
   }
 }
