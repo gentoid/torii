@@ -1,4 +1,5 @@
 import QueryString from 'torii/lib/query-string';
+import { WithOptional } from './base';
 import OAuth2Provider, {
   Oauth2ProviderParams,
   requiredParams as oauth2RequiredParams,
@@ -25,8 +26,7 @@ type Defined =
   | 'alwaysPrompt'
   | 'responseParams';
 
-type Params = Omit<StripeConnectProviderParams, Defined> &
-  Partial<Pick<StripeConnectProviderParams, Defined>>;
+type Params = WithOptional<StripeConnectProviderParams, Defined>;
 
 export default class StripeConnectProvider extends OAuth2Provider<StripeConnectProviderParams> {
   constructor(params: Params) {

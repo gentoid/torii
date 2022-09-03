@@ -10,6 +10,11 @@ export interface BaseProviderParams {
   remoteServiceName?: string;
 }
 
+export type WithOptional<
+  C extends BaseProviderParams,
+  K extends keyof C
+> = Omit<C, K> & Partial<Pick<C, K>>;
+
 /**
  * The base class for all torii providers
  * @class BaseProvider
