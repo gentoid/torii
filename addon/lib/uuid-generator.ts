@@ -1,5 +1,5 @@
-var UUIDGenerator = {
-  generate() {
+export default class UUIDGenerator {
+  static generate() {
     var d = new Date().getTime();
     var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
       /[xy]/g,
@@ -10,7 +10,5 @@ var UUIDGenerator = {
       }
     );
     return uuid;
-  },
-};
-
-export default UUIDGenerator;
+  }
+}
