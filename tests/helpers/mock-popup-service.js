@@ -1,5 +1,5 @@
 import PopupService from 'torii/services/popup';
-import ParseQueryString from 'torii/lib/parse-query-string';
+import ParseQueryString from 'torii/lib/query-string-parser';
 import { resolve } from 'rsvp';
 
 export default class MyFirstPopup extends PopupService {
