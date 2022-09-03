@@ -1,4 +1,4 @@
-type FromKeys<K extends ReadonlyArray<string>> = {
+export type FromKeys<K extends ReadonlyArray<string>> = {
   [key in K[number]]?: string;
 };
 
