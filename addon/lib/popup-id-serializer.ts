@@ -3,7 +3,7 @@ export default class PopupIdSerializer {
     return 'torii-popup:' + popupId;
   }
 
-  static deserialize(serializedPopupId?: string) {
+  static deserialize(serializedPopupId?: string | null) {
     if (!serializedPopupId) {
       return null;
     }
