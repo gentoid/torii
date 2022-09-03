@@ -1,27 +1,43 @@
-/* eslint-disable ember/no-new-mixins */
 import { later, run, cancel } from '@ember/runloop';
 import { Promise as EmberPromise } from 'rsvp';
-import Mixin from '@ember/object/mixin';
-import { on } from '@ember/object/evented';
 import UUIDGenerator from 'torii/lib/uuid-generator';
 import PopupIdSerializer from 'torii/lib/popup-id-serializer';
-import ParseQueryString from 'torii/lib/query-string-parser';
 import assert from 'torii/lib/assert';
+import { getConfiguration } from 'torii/configuration';
+import QueryStringParser, { FromKeys } from 'torii/lib/query-string-parser';
+import { EmberRunTimer } from '@ember/runloop/types';
+
 export const CURRENT_REQUEST_KEY = '__torii_request';
 export const WARNING_KEY = '__torii_redirect_warning';
-import { getConfiguration } from 'torii/configuration';
 
-function parseMessage(url, keys) {
-  var parser = ParseQueryString.create({ url: url, keys: keys });
-  var data = parser.parse();
-  return data;
+interface Params<Options extends Object> {
+  openRemote: (
+    url: string,
+    pendingRequestKey: string,
+    options: Options
+  ) => void;
+  pollRemote: () => void;
+  closeRemote: () => void;
 }
 
-var ServicesMixin = Mixin.create({
-  init() {
-    this._super(...arguments);
-    this.remoteIdGenerator = this.remoteIdGenerator || UUIDGenerator;
-  },
+export default class UiService<Options extends Object> {
+  remoteIdGenerator = UUIDGenerator;
+  polling?: EmberRunTimer;
+  timeout?: EmberRunTimer;
+
+  onDidCloseListeners: Array<() => void> = [];
+  oneDidCloseListeners: Array<() => void> = [];
+
+  remote: null | Window = null;
+  openRemote;
+  pollRemote;
+  closeRemote;
+
+  constructor(params: Params<Options>) {
+    this.openRemote = params.openRemote;
+    this.pollRemote = params.pollRemote;
+    this.closeRemote = params.closeRemote;
+  }
 
   // Open a remote window. Returns a promise that resolves or rejects
   // according to whether the window is redirected with arguments in the URL.
@@ -33,26 +49,34 @@ var ServicesMixin = Mixin.create({
   // });
   //
   // Services that use this mixin should implement openRemote
-  //
-  open(url, keys, options) {
+  open<Keys extends ReadonlyArray<string>>(
+    url: string,
+    keys: Keys,
+    options: Options
+  ) {
     let service = this;
     let lastRemote = this.remote;
-    let storageToriiEventHandler;
+    let storageToriiEventHandler: (event: StorageEvent) => void;
 
-    return new EmberPromise(function (resolve, reject) {
+    return new EmberPromise<FromKeys<Keys>>(function (resolve, reject) {
       if (lastRemote) {
         service.close();
       }
 
       var remoteId = service.remoteIdGenerator.generate();
       storageToriiEventHandler = function (storageEvent) {
-        var remoteIdFromEvent = PopupIdSerializer.deserialize(storageEvent.key);
+        const key = storageEvent.key;
+        const newValue = storageEvent.newValue;
+
+        if (!key || !newValue) {
+          return;
+        }
+
+        var remoteIdFromEvent = PopupIdSerializer.deserialize(key);
         if (remoteId === remoteIdFromEvent) {
-          var data = parseMessage(storageEvent.newValue, keys);
-          localStorage.removeItem(storageEvent.key);
-          run(function () {
-            resolve(data);
-          });
+          var data = QueryStringParser.parse(newValue, keys);
+          localStorage.removeItem(key);
+          run(() => resolve(data));
         }
       };
       var pendingRequestKey = PopupIdSerializer.serialize(remoteId);
@@ -65,6 +89,7 @@ var ServicesMixin = Mixin.create({
       var onbeforeunload = window.onbeforeunload;
       window.onbeforeunload = function () {
         if (typeof onbeforeunload === 'function') {
+          // @ts-expect-error
           onbeforeunload();
         }
         service.close();
@@ -78,7 +103,7 @@ var ServicesMixin = Mixin.create({
         return;
       }
 
-      service.one('didClose', function () {
+      service.oneDidCloseListeners.push(() => {
         let hasWarning = localStorage.getItem(WARNING_KEY);
         if (hasWarning) {
           localStorage.removeItem(WARNING_KEY);
@@ -89,6 +114,7 @@ var ServicesMixin = Mixin.create({
               removed in a future release, as doing so is a potential security vulnerability.
               Hide this message by setting \`allowUnsafeRedirect: true\` in your Torii configuration.
           `,
+            // @ts-expect-error
             configuration.allowUnsafeRedirect
           );
         }
@@ -111,47 +137,58 @@ var ServicesMixin = Mixin.create({
           100
         );
       });
+
       window.addEventListener('storage', storageToriiEventHandler);
     }).finally(function () {
       // didClose will reject this same promise, but it has already resolved.
       service.close();
       window.removeEventListener('storage', storageToriiEventHandler);
     });
-  },
+  }
 
   close() {
     if (this.remote) {
       this.closeRemote();
       this.remote = null;
-      this.trigger('didClose');
+      this.onDidClose();
     }
     this.cleanUp();
-  },
+  }
 
   cleanUp() {
     this.clearTimeout();
-  },
+  }
 
   schedulePolling() {
     this.polling = later(
       this,
-      function () {
+      () => {
         this.pollRemote();
         this.schedulePolling();
       },
       35
     );
-  },
+  }
 
-  // Clear the timeout, in case it hasn't fired.
   clearTimeout() {
     cancel(this.timeout);
-    this.timeout = null;
-  },
+    this.timeout = undefined;
+  }
 
-  stopPolling: on('didClose', function () {
+  onDidClose() {
+    for (const listener of this.onDidCloseListeners) {
+      listener();
+    }
+
+    while (this.oneDidCloseListeners.length > 0) {
+      const listener = this.oneDidCloseListeners.shift();
+      listener?.();
+    }
+
+    this.stopPolling();
+  }
+
+  stopPolling() {
     cancel(this.polling);
-  }),
-});
-
-export default ServicesMixin;
+  }
+}
