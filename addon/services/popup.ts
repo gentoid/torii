@@ -1,9 +1,16 @@
-/* eslint-disable ember/no-mixins, no-prototype-builtins, ember/no-classic-classes */
-import Evented from '@ember/object/evented';
-import EmberObject from '@ember/object';
-import UiServiceMixin from 'torii/mixins/ui-service-mixin';
+import UiService from 'torii/mixins/ui-service-mixin';
 
-function stringifyOptions(options) {
+interface WindowSize {
+  width: number;
+  height: number;
+}
+
+interface WindowPosition {
+  left: number;
+  top: number;
+}
+
+function stringifyOptions(options: Record<string, unknown>) {
   var optionsStrings = [];
   for (var key in options) {
     if (options.hasOwnProperty(key)) {
@@ -24,7 +31,7 @@ function stringifyOptions(options) {
   return optionsStrings.join(',');
 }
 
-function prepareOptions(options) {
+function prepareOptions(options: WindowSize): WindowSize & WindowPosition {
   var width = options.width || 500,
     height = options.height || 500;
 
@@ -40,23 +47,28 @@ function prepareOptions(options) {
   );
 }
 
-var Popup = EmberObject.extend(Evented, UiServiceMixin, {
-  // Open a popup window.
-  openRemote(url, pendingRequestKey, options) {
-    var optionsString = stringifyOptions(prepareOptions(options || {}));
-    this.remote = window.open(url, pendingRequestKey, optionsString);
-  },
+export default class PopupService {
+  uiService: UiService<WindowSize>;
 
-  closeRemote() {},
+  constructor() {
+    this.uiService = new UiService(this);
+  }
+
+  // Open a popup window.
+  openRemote(url: string, pendingRequestKey: string, options: WindowSize) {
+    // @ts-expect-error
+    var optionsString = stringifyOptions(prepareOptions(options || {}));
+    this.uiService.remote = window.open(url, pendingRequestKey, optionsString);
+  }
+
+  closeRemote() {}
 
   pollRemote() {
-    if (!this.remote) {
+    if (!this.uiService.remote) {
       return;
     }
-    if (this.remote.closed) {
-      this.trigger('didClose');
+    if (this.uiService.remote.closed) {
+      this.uiService.onDidClose();
     }
-  },
-});
-
-export default Popup;
+  }
+}
